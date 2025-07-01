@@ -20,13 +20,13 @@ It certainly has a lot of issues and it was built with a bunch of tears and frus
 You can install the library using pip:
 
 ```bash
-pip install fat16lib
+pip install git+https://github.com/LMangrich/fat16lib.git
 ```
 
 Or directly from source:
 
 ```
-git clone https://github.com/Lmangrich/Fat16lib.git
+git clone https://github.com/Lmangrich/fat16lib.git
 cd fat16lib
 pip install .
 ```

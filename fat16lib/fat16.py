@@ -12,7 +12,7 @@ class FAT16:
             raise FileNotFoundError(f"Disk image not found: {image_path}")
         self.image_path = image_path
 
-    def read_boot_sector(self, img_file):
+    def _read_boot_sector(self, img_file):
         """Read and parse FAT16 boot sector information"""
         try:
             boot_sector = img_file.read(512)
@@ -30,7 +30,7 @@ class FAT16:
         except struct.error as e:
             raise InvalidDiskImageError(f"Invalid boot sector structure: {str(e)}")
 
-    def read_disk_data(self, img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries):
+    def _read_disk_data(self, img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries):
         """Read root directory data from disk"""
         root_dir_start = bytes_per_sector * (reserved_sectors + sectors_per_fat * number_of_fats)
         root_dir_size = root_dir_entries * DIR_ENTRY_SIZE
@@ -43,8 +43,8 @@ class FAT16:
     def list_files(self):
         """List all files in root directory"""
         with open(self.image_path, 'rb') as img_file:
-            bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self.read_boot_sector(img_file)
-            root_dir_size, root_dir_data = self.read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
+            bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors = self._read_boot_sector(img_file)
+            root_dir_size, root_dir_data = self._read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
 
             files = [] 
 
@@ -70,8 +70,8 @@ class FAT16:
         """Read complete content of specified file"""
         try:
             with open(self.image_path, 'rb') as img_file:
-                bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self.read_boot_sector(img_file)
-                root_dir_size, root_dir_data = self.read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
+                bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self._read_boot_sector(img_file)
+                root_dir_size, root_dir_data = self._read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
 
                 content = None
 
@@ -111,8 +111,8 @@ class FAT16:
         """Get attributes and metadata for specified file"""
         try:
             with open(self.image_path, 'rb') as img_file:
-                bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self.read_boot_sector(img_file)
-                root_dir_size, root_dir_data = self.read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
+                bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self._read_boot_sector(img_file)
+                root_dir_size, root_dir_data = self._read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
             
             for i in range(0, root_dir_size, DIR_ENTRY_SIZE):
                     entry = root_dir_data[i:i + DIR_ENTRY_SIZE]
@@ -155,8 +155,8 @@ class FAT16:
     def rename_file(self, file, new_file_name): 
         """Rename a file in the filesystem"""
         with open(self.image_path, 'r+b') as img_file:
-            bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self.read_boot_sector(img_file)
-            root_dir_size, root_dir_data = self.read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
+            bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self._read_boot_sector(img_file)
+            root_dir_size, root_dir_data = self._read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
 
             name_part, ext_part = split_filename(new_file_name)
             if not name_part:
@@ -183,7 +183,7 @@ class FAT16:
 
         return False
 
-    def find_free_clusters(self, img_file, num_clusters, fat_start, fat_size):
+    def _find_free_clusters(self, img_file, num_clusters, fat_start, fat_size):
         """Find contiguous free clusters in FAT"""
         img_file.seek(fat_start)
         fat = img_file.read(fat_size)
@@ -196,7 +196,7 @@ class FAT16:
                     break
         return free_clusters
 
-    def update_fat(self, img_file, clusters, fat_start):
+    def _update_fat(self, img_file, clusters, fat_start):
         """Update FAT with cluster chain"""
         for i in range(len(clusters) - 1):
             img_file.seek(fat_start + clusters[i] * 2)
@@ -205,7 +205,7 @@ class FAT16:
         img_file.seek(fat_start + clusters[-1] * 2)
         img_file.write(struct.pack('<H', END_OF_CLUSTER))
 
-    def write_file_content(self, img_file, content, clusters, data_start, bytes_per_sector, sectors_per_cluster):
+    def _write_file_content(self, img_file, content, clusters, data_start, bytes_per_sector, sectors_per_cluster):
         """Write file content to allocated clusters"""
         cluster_size = bytes_per_sector * sectors_per_cluster
         for i, cluster in enumerate(clusters):
@@ -227,15 +227,15 @@ class FAT16:
 
         try:
             with open(self.image_path, 'r+b') as img_file:
-                bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self.read_boot_sector(img_file)
-                root_dir_size, root_dir_data = self.read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
+                bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self._read_boot_sector(img_file)
+                root_dir_size, root_dir_data = self._read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
 
                 fat_start = reserved_sectors * bytes_per_sector
                 fat_size = sectors_per_fat * bytes_per_sector
                 data_start = root_dir_start + root_dir_entries * DIR_ENTRY_SIZE
 
                 clusters_needed = (file_size + bytes_per_sector * sectors_per_cluster - 1) // (bytes_per_sector * sectors_per_cluster)
-                clusters = self.find_free_clusters(img_file, clusters_needed, fat_start, fat_size)
+                clusters = self._find_free_clusters(img_file, clusters_needed, fat_start, fat_size)
 
                 if len(clusters) < clusters_needed:
                     raise NotEnoughSpaceError("There are not enough free clusters")
@@ -279,8 +279,8 @@ class FAT16:
                 if not entry_found:
                     raise NotEnoughSpaceError("There are no available directory entries")
                 
-                self.update_fat(img_file, clusters, fat_start)
-                self.write_file_content(img_file, file_content, clusters, data_start, bytes_per_sector, sectors_per_cluster)
+                self._update_fat(img_file, clusters, fat_start)
+                self._write_file_content(img_file, file_content, clusters, data_start, bytes_per_sector, sectors_per_cluster)
         except IOError as e:
             raise FileAccessError(f"Could not access disk image: {str(e)}")
 
@@ -289,8 +289,8 @@ class FAT16:
         """Delete file from filesystem and free allocated clusters"""
         try:
             with open(self.image_path, 'r+b') as img_file:
-                bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self.read_boot_sector(img_file)
-                root_dir_size, root_dir_data = self.read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
+                bytes_per_sector, sectors_per_fat, number_of_fats, root_dir_entries, reserved_sectors, sectors_per_cluster, root_dir_start = self._read_boot_sector(img_file)
+                root_dir_size, root_dir_data = self._read_disk_data(img_file, bytes_per_sector, reserved_sectors, sectors_per_fat, number_of_fats, root_dir_entries)
 
                 first_data_sector = reserved_sectors + number_of_fats * sectors_per_fat + (root_dir_entries * DIR_ENTRY_SIZE + bytes_per_sector - 1) // bytes_per_sector
 
