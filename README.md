@@ -1,7 +1,7 @@
 # FAT16 Library
 
 A Python library for reading and manipulating FAT16 filesystem images, developed as part of an Operating Systems course project.
-It certainly has a lot of issues, but it was built with plenty of tears and frustration!
+It certainly has a lot of issues and it was built with a bunch of tears and frustration but it works!
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -106,7 +106,8 @@ Initialize with path to FAT16 image file.
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or pull request on GitHub. But I may warn, it's been ages since my last deep dive into FAT16, so I might need to study it a bit again!
+Contributions are welcome! Please open an issue or pull request on GitHub.
+But I may warn you, it's been ages since my last deep dive into FAT16, so I might need to study it a bit again!
 
 ## License
 
