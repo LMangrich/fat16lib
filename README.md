@@ -107,7 +107,7 @@ Initialize with path to FAT16 image file.
 ## Contributing
 
 Contributions are welcome! Please open an issue or pull request on GitHub.
-But I may warn you, it's been ages since my last deep dive into FAT16, so I might need to study it a bit again!
+But I may warn you, it has been ages since my last deep dive into FAT16, so I might need to study it a bit again!
 
 ## License
 
